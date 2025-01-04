@@ -1,0 +1,166 @@
+#任务要求:
+#利用反向传播，用y=wx拟合
+#通过数据x_data = [1.0, 2.0, 3.0]，y_data = [2.0, 4.0, 6.0]进行训练，找出最佳w
+#并可视化输出每一阶段的loss和w组成的loss-w图,loss随训练次数的变化的图loss-epoch
+
+import torch
+
+x_data = [1.0, 2.0, 3.0]  
+y_data = [2.0, 4.0, 6.0]
+
+#Tenser用于保存data即权重w本身的值，还用于保存grad，即loss对w的导数
+#w创建为tensor类型，为了到时候存储loss对w的导数grad
+#w的值data为1.0
+w = torch.tensor([1.0])  
+
+# tensor.requires_grad = True 表明tensor需要计算梯度  
+# 或者 tensor.requires_grad_()
+w.requires_grad = True 
+
+# w是Tensor,故x也被广播了，x*w结果也为tensor
+#由于w需要计算梯度，故跟w相关的tensor都默认需要计算梯度，且默认grad=Ture
+def forward(x,w):
+    return x*w  
+ 
+def loss(x, y,w):
+    y_pred = forward(x,w)
+    return (y_pred - y)**2 #结果也为tensor
+
+#item()的作用是取出单元素张量的元素值并返回该值，保持该元素类型不变
+#使用item()函数取出的元素值的精度更高
+#所以在求损失函数等时我们一般用item，而不是直接取对应的元素x[i,j]
+#如果不.item则输出的是张量而不是数值
+print("predict (before training)", 4, forward(4,w).item())
+ 
+loss_list=[]
+w_list=[]
+epoch_list=[]
+learning_rate = 0.01 #学习率
+
+for epoch in range(100):
+    for x, y in zip(x_data, y_data):
+        # loss_val是一个张量，tensor主要是在建立计算图 forward,计算loss
+        loss_val =loss(x,y,w) 
+        #调用backward()会将所有的需要计算梯度的都求出来，存储到对应的w.grad.data中
+        #为了节约内存，存完之后计算图就被释放了
+        loss_val.backward() 
+        print('\tgrad:', x, y, w.grad.item())
+        # 权重更新时，注意grad也是一个tensor，若直接调用又会有计算图
+        #故更新w.data时需使用w.grad.data，取tensor中的data是不会构建计算图的
+        w.data = w.data - 0.01 * w.grad.data 
+        #在梯度更新之后需要将梯度清零，不然下一次再存储grad时是两个相加
+        w.grad.data.zero_() 
+    # 取出loss使用loss_val.item(),不要直接使用loss_val，loss_val是tensor会构建计算图）
+    print('progress:', epoch, loss_val.item())     
+    epoch_list.append(epoch)
+    loss_list.append(loss_val.item())
+    w_list.append(w.item())
+
+print("predict (after training)", 4, forward(4,w).item())
+
+print(loss_list)
+print(w_list)
+print(epoch_list)
+        
+# 可视化 loss 随训练次数epoch的变化
+plt.plot(epoch_list,loss_list,label='loss-epoch')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend()
+plt.show()
+
+# 可视化 loss 和 w 的关系
+plt.plot(w_list,loss_list, label='loss-w')
+plt.ylabel('loss')
+plt.xlabel('w')
+plt.legend()
+plt.show()
+
+
+
+#任务要求:
+#利用反向传播，用y=w1*x**2+w2*x+b拟合
+#通过数据x_data = [1.0, 2.0, 3.0]，y_data = [2.0, 4.0, 6.0]进行训练，找出最佳w1,w2,b
+#并可视化输出每一阶段的loss和w1组成的loss-w1图
+#并可视化输出每一阶段的loss和w2组成的loss-w2图
+#并可视化输出每一阶段的loss和b组成的loss-b图
+#并可视化输出loss随训练次数epoch变化的loss-epoch图
+
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+
+x_data = [1.0, 2.0, 3.0]  
+y_data = [2.0, 4.0, 6.0]
+
+w1 = torch.tensor([1.0]) 
+w2 = torch.tensor([1.0])  
+b = torch.tensor([1.0])  
+
+w1.requires_grad = True 
+w2.requires_grad = True 
+b.requires_grad = True 
+
+def forward(x,w1,w2,b):
+    return w1*x**2+w2*x+b
+ 
+def loss(x, y,w1,w2,b):
+    y_pred = forward(x,w1,w2,b)
+    return (y_pred - y)**2 
+ 
+loss_list=[]
+w1_list=[]
+w2_list=[]
+b_list=[]
+epoch_list=[]
+learning_rate = 0.01 #学习率
+
+print('Predict (befortraining)',4,forward(4,w1,w2,b).item())
+
+for epoch in range(100):
+    for x, y in zip(x_data, y_data):
+        loss_val =loss(x,y,w1,w2,b) 
+        loss_val.backward() 
+        w1.data = w1.data - 0.01 * w1.grad.data 
+        w2.data = w2.data - 0.01 * w2.grad.data 
+        b.data = b.data - 0.01 * b.grad.data 
+        w1.grad.data.zero_() 
+        w2.grad.data.zero_()
+        b.grad.data.zero_()  
+    epoch_list.append(epoch)
+    loss_list.append(loss_val.item())
+    w1_list.append(w1.item())
+    w2_list.append(w2.item())
+    b_list.append(b.item())
+
+print(loss_list)
+print(w1_list)
+print(w2_list)
+print(b_list)
+print(epoch_list)
+
+print('Predict(after training)',4,forward(4,w1,w2,b).item())
+
+plt.plot(epoch_list,loss_list,label='loss-epoch')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend()
+plt.show()
+
+plt.plot(w1_list,loss_list, label='loss-w1')
+plt.ylabel('loss')
+plt.xlabel('w1')
+plt.legend()
+plt.show()
+
+plt.plot(w2_list,loss_list, label='loss-w2')
+plt.ylabel('loss')
+plt.xlabel('w2')
+plt.legend()
+plt.show()
+
+plt.plot(b_list,loss_list, label='loss-b')
+plt.ylabel('loss')
+plt.xlabel('b')
+plt.legend()
+plt.show()
